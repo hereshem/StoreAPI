@@ -1,7 +1,9 @@
 <?php
+  // initially check for API, if it is API we must send JSON data only.
   date_default_timezone_set("Asia/Kathmandu");
   include_once("connection.php");
-  if(isset($_GET['action']) && $_GET['action'] == "api") {
+  $action = $_GET['action'];
+  if(isset($action) && $action == "api") { 
     $sql = "SELECT * FROM `products` WHERE status='published' ORDER BY id DESC LIMIT ".(isset($_GET['skip'])?$_GET['skip']:'0').", 20";
       $json_array = array();
       $result = $connect->query($sql);
@@ -31,10 +33,7 @@
 <body>
 <div align="center">
 <?php
-  date_default_timezone_set("Asia/Kathmandu");
-  include_once("connection.php");
-  if(isset($_GET['action'])) {
-    $action = $_GET['action'];
+  if(isset($action)) {
     $name = "";
     $price= "";
     $quantity= "";
@@ -43,6 +42,7 @@
     $edit = "false";
     $id = null;
 
+    // check if it is originated from edit product
     if($action == "edit_product"){
       $sql = "SELECT * FROM products WHERE id='".$_GET['id']."'";
       $result = $connect->query($sql);
@@ -62,13 +62,13 @@
         exit;
       }
     }
-    else if($action == "delete_product"){
+    else if($action == "delete_product"){ // handling delete product
           $sql = "DELETE FROM products WHERE id=".$_GET['id'];
           $result = $connect->query($sql) or die("<h1>Delete error</h1>");
           echo "<h2>Data delete success click <a href='products.php'>here<a/> to goto list</h2>";
           exit;
     }
-    else{
+    else{ // otherwise show Add product form
       echo "<h1>Add new product </h1>";
     }
 ?>
@@ -132,7 +132,7 @@
 <h2>Click <a href='products.php'>here<a/> to goto list</h2>
 <?php
 }
-else if(isset($_POST['submit_product'])) {
+else if(isset($_POST['submit_product'])) { // if action is submited via button click
     $name = $_POST['name'];
     $price = $_POST['price'];
     $quantity = $_POST['quantity'];
@@ -141,18 +141,19 @@ else if(isset($_POST['submit_product'])) {
     $created = date("Y-m-d H:i:s");
     $modified = date("Y-m-d H:i:s");
 
-    if(isset($_POST['id']) && ($_POST['edit'] == "true")){
+    if(isset($_POST['id']) && ($_POST['edit'] == "true")){ // check for edit condition 
      $sql = "UPDATE products SET name='{$name}', price='{$price}', quantity='{$quantity}', status='{$status}', description='{$description}', modified='{$modified}' WHERE id=".$_POST['id'];
     }
-    else{
+    else{ // otherwise it is new request so add to database
      $sql = "INSERT INTO products (name, price, quantity, status,description, created, modified) VALUES ('{$name}', '{$price}', '{$quantity}', '{$status}','{$description}', '{$created}', '{$modified}')";
     }
     $result = $connect->query($sql) or die("<h1>Data insert/update error</h1>");
     echo "<h2>Data saved/updated click <a href='products.php'>here<a/> to goto list</h2>";
     exit;
 }
-else{
-    $sql = "SELECT * FROM products ORDER BY id DESC  LIMIT ".(isset($_GET['skip'])?$_GET['skip']:'0').",20";
+else{   // no any action selected so lets display items from database
+    $skip = isset($_GET['skip'])?$_GET['skip']:0; // we can paginate with the skip parameter
+    $sql = "SELECT * FROM products ORDER BY id DESC  LIMIT ".$skip.",20";
     $result = $connect->query($sql);
     echo "<h1>Department Store</h1>";
     echo "<h3><a href='products.php?action=new_product'>Add product</a> <a href='products.php?action=api'>View API</a></h3>";
@@ -160,15 +161,16 @@ else{
 ?>
       <table style="min-width:500px;width:90%" border="1">
     <tr>
-      <th>SN</th><th>product</th><th>price</th><th>Status</th><th>description</th><th>quantity</th><th>Created</th><th>Modified</th><th>Action</th>
+      <th>SN</th><th>ID</th><th>Product</th><th>Price</th><th>Status</th><th>Description</th><th>Quantity</th><th>Created</th><th>Modified</th><th>Action</th>
     </tr>
 <?php
-      $sn=0;
+      $sn=$skip;  // count SN with initial value of skip
       while($rows = $result->FETCH_ASSOC()){
     $sn++;
     echo "
         <tr style='text-align:center;'>
       <td>{$sn}</td>
+      <td>{$rows['id']}</td>
       <td>{$rows['name']}</td>
       <td>{$rows['price']}</td>
       <td>{$rows['status']}</td>
